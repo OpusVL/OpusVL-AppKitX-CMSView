@@ -1,5 +1,6 @@
 package OpusVL::AppKitX::CMSView::Controller::CMS::Root;
 
+use 5.010;
 use Moose;
 use namespace::autoclean;
 BEGIN { extends 'OpusVL::AppKit::Controller::Root'; };
@@ -29,6 +30,10 @@ sub default :Private {
             if (my $attachment = $c->model('CMS::Attachments')->find({id => shift})) {
                 return $c->uri_for($c->controller->action_for('_attachment'), $attachment->id, $attachment->filename);
             }
+        };
+        $c->stash->{thumbnail} = sub {
+            my ($type, $id, $options) = @_;
+            return $c->uri_for($c->controller->action_for('_thumbnail'), @_);
         };
         $c->stash->{element} = sub {
             if (my $element = $c->model('CMS::Elements')->published->find({id => shift})) {
@@ -85,6 +90,39 @@ sub _attachment :Local :Args(2) {
     if (my $attachment = $c->model('CMS::Attachments')->find({id => $attachment_id})) {
         $c->response->content_type($attachment->mime_type);
         $c->response->body($attachment->content);
+    } else {
+        $c->response->status(404);
+        $c->response->body("Not found");
+    }
+}
+
+sub _thumbnail :Local :Args(2) {
+    my ($self, $c, $type, $id) = @_;
+    
+    given ($type) {
+        when ('asset') {
+            if (my $asset = $c->model('CMS::Assets')->published->find({id => $id})) {
+                $c->stash->{image} = $asset->content;
+            }
+        }
+        when ('attachment') {
+            if (my $attachment = $c->model('CMS::Attachments')->find({id => $id})) {
+                $c->stash->{image} = $attachment->content;
+            }
+        }
+    }
+    
+    if ($c->stash->{image}) {
+        $c->stash->{x}       = $c->req->param('x') || undef;
+        $c->stash->{y}       = $c->req->param('y') || undef;
+        $c->stash->{zoom}    = $c->req->param('zoom') || 100;
+        $c->stash->{scaling} = $c->req->param('scaling') || 'fill';
+        
+        unless ($c->stash->{x} || $c->stash->{y}) {
+            $c->stash->{y} = 50;
+        }
+        
+        $c->forward($c->view('CMS::Thumbnail'));
     } else {
         $c->response->status(404);
         $c->response->body("Not found");

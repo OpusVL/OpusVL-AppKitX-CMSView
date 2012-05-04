@@ -31,6 +31,12 @@ after 'setup_components' => sub {
         component => 'OpusVL::AppKitX::CMSView::View::CMS',
         as        => 'View::CMS::Element'
     );
+
+    CatalystX::InjectComponent->inject(
+        into      => $class,
+        component => 'OpusVL::AppKitX::CMSView::View::Thumbnail',
+        as        => 'View::CMS::Thumbnail'
+    );
 };
 
 1;
