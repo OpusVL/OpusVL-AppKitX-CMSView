@@ -20,31 +20,35 @@ sub default :Private {
     }
     
     if (my $page = $c->model('CMS::Pages')->published->find({url => '/'.$c->req->path})) {
-        $c->stash->{me} = $page;
-        $c->stash->{asset} = sub {
-            if (my $asset = $c->model('CMS::Assets')->published->find({id => shift})) {
-                return $c->uri_for($c->controller->action_for('_asset'), $asset->id, $asset->filename);
-            }
-        };
-        $c->stash->{attachment} = sub {
-            if (my $attachment = $c->model('CMS::Attachments')->find({id => shift})) {
-                return $c->uri_for($c->controller->action_for('_attachment'), $attachment->id, $attachment->filename);
-            }
-        };
-        $c->stash->{thumbnail} = sub {
-            my ($type, $id, $options) = @_;
-            return $c->uri_for($c->controller->action_for('_thumbnail'), @_);
-        };
-        $c->stash->{element} = sub {
-            if (my $element = $c->model('CMS::Elements')->published->find({id => shift})) {
-                my $content = $element->content;
-                return $c->view('CMS::Element')->render($c, \$content);
-            }
-        };
-        $c->stash->{page} = sub {
-            if (my $page = $c->model('CMS::Pages')->find({id => shift})) {
-                return $page;
-            }
+        $c->stash->{me}  = $page;
+        $c->stash->{cms} = {
+            asset => sub {
+                if (my $asset = $c->model('CMS::Assets')->published->find({id => shift})) {
+                    return $c->uri_for($c->controller->action_for('_asset'), $asset->id, $asset->filename);
+                }
+            },
+            attachment => sub {
+                if (my $attachment = $c->model('CMS::Attachments')->find({id => shift})) {
+                    return $c->uri_for($c->controller->action_for('_attachment'), $attachment->id, $attachment->filename);
+                }
+            },
+            element => sub {
+                if (my $element = $c->model('CMS::Elements')->published->find({id => shift})) {
+                    return $element->content;
+                }
+            },
+            page => sub {
+                if (my $page = $c->model('CMS::Pages')->published->find({id => shift})) {
+                    return $page;
+                }
+            },
+            param => sub {
+                return $c->req->param(shift);
+            },
+            thumbnail => sub {
+                my ($type, $id, $options) = @_;
+                return $c->uri_for($c->controller->action_for('_thumbnail'), @_);
+            },
         };
         
         if (my $template = $page->template->content) {
