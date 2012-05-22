@@ -19,7 +19,16 @@ sub default :Private {
         $c->detach;
     }
     
-    if (my $page = $c->model('CMS::Pages')->published->find({url => '/'.$c->req->path})) {
+    # Does the URL match a real page?
+    my $page = $c->model('CMS::Pages')->published->find({url => '/'.$c->req->path});
+    
+    # If not, do we have a 404 page?
+    $page //= do {
+        $c->response->status(404);
+        $c->model('CMS::Pages')->published->find({url => '/404'});
+    };
+    
+    if ($page) {
         $c->stash->{me}  = $page;
         $c->stash->{cms} = {
             asset => sub {
@@ -62,16 +71,7 @@ sub default :Private {
         
         $c->forward($c->view('CMS::Page'));
     } else {
-        if (my $page = $c->model('CMS::Pages')->published->find({url => '/404'})) {
-            $c->stash->{page} = $page;
-            
-            if (my $template = $page->template->content) {
-                $c->stash->{template} = \$template;
-                $c->stash->{no_wrapper} = 1;
-            }
-        } else {
-            OpusVL::AppKit::Controller::Root::default($self,$c);
-        }
+        OpusVL::AppKit::Controller::Root::default($self,$c);
     }
 }
 
