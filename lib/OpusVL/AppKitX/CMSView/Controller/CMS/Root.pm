@@ -38,15 +38,18 @@ sub default :Private {
                 }
             },
             page => sub {
-                if (my $page = $c->model('CMS::Pages')->published->find({id => shift})) {
-                    return $page;
-                }
+                return $c->model('CMS::Pages')->published->find({id => shift});
+            },
+            pages => sub {
+                return $c->model('CMS::Pages')->published->attribute_search(@_);
             },
             param => sub {
                 return $c->req->param(shift);
             },
+            toplevel => sub {
+                return $c->model('CMS::Pages')->published->toplevel;
+            },
             thumbnail => sub {
-                my ($type, $id, $options) = @_;
                 return $c->uri_for($c->controller->action_for('_thumbnail'), @_);
             },
         };
