@@ -33,12 +33,12 @@ sub default :Private {
         $c->stash->{cms} = {
             asset => sub {
                 if (my $asset = $c->model('CMS::Assets')->published->find({id => shift})) {
-                    return $c->uri_for($c->controller->action_for('_asset'), $asset->id, $asset->filename);
+                    return $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
                 }
             },
             attachment => sub {
                 if (my $attachment = $c->model('CMS::Attachments')->find({id => shift})) {
-                    return $c->uri_for($c->controller->action_for('_attachment'), $attachment->id, $attachment->filename);
+                    return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->id, $attachment->filename);
                 }
             },
             element => sub {
@@ -59,7 +59,7 @@ sub default :Private {
                 return $c->model('CMS::Pages')->published->toplevel;
             },
             thumbnail => sub {
-                return $c->uri_for($c->controller->action_for('_thumbnail'), @_);
+                return $c->uri_for($c->controller('Root')->action_for('_thumbnail'), @_);
             },
         };
         
