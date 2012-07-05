@@ -22,6 +22,11 @@ sub default :Private {
     # Does the URL match a real page?
     my $page = $c->model('CMS::Pages')->published->find({url => '/'.$c->req->path});
     
+    # If not, do we have a page matching the current action?
+    $page //= do {
+        $c->model('CMS::Pages')->published->find({url => '/'.$c->action});
+    };
+    
     # If not, do we have a 404 page?
     $page //= do {
         $c->response->status(404);
