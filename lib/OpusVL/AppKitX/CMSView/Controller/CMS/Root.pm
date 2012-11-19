@@ -3,6 +3,7 @@ package OpusVL::AppKitX::CMSView::Controller::CMS::Root;
 use 5.010;
 use Moose;
 use Scalar::Util 'looks_like_number';
+use WWW::Mechanize;
 use namespace::autoclean;
 BEGIN { extends 'OpusVL::AppKit::Controller::Root'; };
  
@@ -65,6 +66,12 @@ sub default :Private {
         $site = $page->site;
         $c->stash->{me}  = $page;
         $c->stash->{cms} = {
+            read_url_contents => sub {
+                my $url = shift;
+                my $mech = WWW::Mechanize->new();
+                $mech->get( $url );
+                return $mech->content;
+            },
             asset => sub {
                 my $id = shift;
                 if (looks_like_number $id) {
@@ -130,7 +137,11 @@ sub default :Private {
             $c->stash->{template}   = \$template;
             $c->stash->{no_wrapper} = 1;
         }
-        
+
+        if ($c->req->uri =~ /\.txt$/) {
+            $c->res->content_type("text/plain");
+        }
+
         $c->forward($c->view('CMS::Page'));
     } else {
         OpusVL::AppKit::Controller::Root::default($self,$c);
