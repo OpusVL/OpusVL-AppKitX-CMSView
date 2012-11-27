@@ -2,8 +2,6 @@ package OpusVL::AppKitX::CMSView::Controller::CMS::Root;
 
 use 5.010;
 use Moose;
-use XML::RSS;
-use LWP::Simple 'get';
 use Scalar::Util 'looks_like_number';
 use namespace::autoclean;
 BEGIN { extends 'OpusVL::AppKit::Controller::Root'; };
@@ -67,35 +65,6 @@ sub default :Private {
         $site = $page->site;
         $c->stash->{me}  = $page;
         $c->stash->{cms} = {
-            yahoo_weather_widget => sub {
-              my $woeid = shift;
-              my $data = get("http://weather.yahooapis.com/forecastrss?w=$woeid&u=c");
-              my $rss  = XML::RSS->new->parse( $data );
-              
-              my @desc = split("\n", $rss->{items}->[0]->{description});
-              my ($image, $conditions) = (
-                $desc[1],
-                $desc[3]
-              );
-              
-              my $title = $rss->{items}->[0]->{title};
-              my @time  = $title =~ /(\d+:\d{2}\s+?[am|pm]*?)\s+?/;
-              return qq{
-                <div style="float:left;">
-                  $image
-                </div>
-                <div class="weather_text" >
-                  <div style="clear:left;">
-                    The local time is:&nbsp;$time[0]
-                  </div>
-                  <div style="clear:left;">
-                        The temperature is:&nbsp;$conditions
-                  </div>
-                  <div style="clear:left;"></div>
-                </div>
-                <div style="clear:both;"></div>
-                };
-            },
             asset => sub {
                 my $id = shift;
                 if (looks_like_number $id) {
