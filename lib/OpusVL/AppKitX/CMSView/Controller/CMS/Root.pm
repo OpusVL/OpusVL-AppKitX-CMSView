@@ -99,18 +99,18 @@ sub default :Private {
             asset => sub {
                 my $id = shift;
                 if (looks_like_number $id) {
-                    if (my $asset = $site->assets->available->find({id => $id})) {
+                    if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({id => $id})) {
                         return $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
                     }
                 }
                 else {
                     # not a number? then we may be looking for a logo!
                     if ($id eq 'logo') {
-                        if (my $logo = $site->assets->published->find({ description => 'Logo' })) {
+                        if (my $logo = $c->model('CMS::Asset')->available($site->id)->find({ description => 'Logo' })) {
                             return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
                         }
                         else {
-                            if ($logo = $c->model('CMS::Asset')->published->find({ global => 1, description => 'Logo' })) {
+                            if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
                                 return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
                             }
                         }
@@ -129,7 +129,7 @@ sub default :Private {
                         $c->stash->{me}->{$attr} = $attrs->{$attr};
                     }
                 }
-                if (my $element = $site->elements->available->find({id => $id})) {
+                if (my $element = $c->model('CMS::Element')->available($site->id)->find({id => $id})) {
                     return $element->content;
                 }
             },
