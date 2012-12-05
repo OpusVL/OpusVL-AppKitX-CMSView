@@ -6,7 +6,7 @@ extends 'Catalyst::View::TT::Alloy';
 
 __PACKAGE__->config({
   ENCODING => 'utf-8',
-  AUTO_FILTER => 'html',
+  AUTO_FILTER => 'none',
 });
 
 1;
