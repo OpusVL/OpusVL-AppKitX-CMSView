@@ -133,7 +133,6 @@ sub default :Private {
             foreach my $plugin (@plugins) {
               my $code = $plugin->code;
               $code !~ s/[^[:ascii:]]//g;
-              warn "******** RUNNING CODE: $code\n\n\n";
               $c->stash->{cms}->{plugin}->{ $plugin->action } = sub { eval($code) };
             }
           }
