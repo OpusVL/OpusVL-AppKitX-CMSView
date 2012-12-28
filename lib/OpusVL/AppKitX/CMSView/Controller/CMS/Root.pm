@@ -61,7 +61,34 @@ sub default :Private {
         $pages->published->find({url => '/404'});
     };
     
+    my $display_errors;
     if ($page) {
+        # form been submitted?
+        if ($c->req->body_params) {
+            my $params = $c->req->body_params;
+            if (my $fid = $params->{form_id}) {
+                if (my $form = $c->model('CMS::Form')->find($fid)) {
+                    if (my $submit = $form->forms_submit_fields->first) {
+                        # Form has been submitted!
+                        my $value = $submit->value;
+                        $value = lc $value;
+                        $value =~ s/\s/_/g;
+                        $value =~ s/[^\w\d\s]//g;
+                        if ($params->{$value}) {
+                            my @errors = $form->validate($params);
+                            
+                            if (scalar @errors > 0) {
+                                $display_errors = $self->_build_error(\@errors);
+                            }
+                            else {
+                                $form->save($params)->email;
+                                $c->res->redirect($submit->redirect->url);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         $site = $page->site;
         $c->stash->{me}  = $page;
         $c->stash->{cms} = {
@@ -75,7 +102,7 @@ sub default :Private {
                 else {
                     # not a number? then we may be looking for a logo!
                     if ($id eq 'logo') {
-                        if (my $logo = $c->model('CMS::Asset')->available($site->id)->find({ description => 'Logo' })) {
+                        if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
                             return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
                         }
                         else {
@@ -123,6 +150,10 @@ sub default :Private {
             thumbnail => sub {
                 return $c->uri_for($c->controller('Root')->action_for('_thumbnail'), @_);
             },
+            form      => sub {
+                my $name = shift;
+                return $site->forms->find({ name => $name });
+            },
         };
 
         # load any plugins
@@ -139,7 +170,12 @@ sub default :Private {
         }
 
         if (my $template = $page->template->content) {
-            $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
+            if ($display_errors) {
+                $template = '[% BLOCK content %]' . $display_errors . $page->content . '[% END %]' . $template;
+            }
+            else {
+                $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
+            }
             $c->stash->{template}   = \$template;
             $c->stash->{no_wrapper} = 1;
         }
@@ -151,6 +187,41 @@ sub default :Private {
         $c->forward($c->view('CMS::Page'));
     } else {
         OpusVL::AppKit::Controller::Root::default($self,$c);
+    }
+}
+
+sub _build_error {
+    my ($self, $errors) = @_;
+    my $errlist = "Please fix the errors below and re-submit your form\\n\\n";
+    for my $err (@$errors) {
+        $errlist .= "* ${err}\\n";
+    }
+
+    #return qq{
+    #    <style type="text/css">
+    #        .error_msg {
+    #            width:100%;
+    #            height:50px;
+    #            display:block;
+    #            position:absolute;
+    #            top:0;
+    #            left:0;
+    #            background-color: #ccc;
+    #            margin-bottom: 10px;
+    #        }
+    #        </style>
+    #        <div class="error_msg">
+    #            <p><strong>Please check the errors below and re-submit your form</strong></p>
+    #            <ul>
+    #                ${errlist}
+    #            </ul>
+    #        </div>
+    #};
+
+    return qq{
+        <script type="text/javascript">
+            alert("$errlist");
+        </script>
     }
 }
 
