@@ -139,7 +139,7 @@ sub default :Private {
                 return $site->pages->published->find({id => shift});
             },
             pages => sub {
-                return $site->pages->published->attribute_search(@_);
+                return $site->pages->published->attribute_search($site->id, @_);
             },
             param => sub {
                 return $c->req->param(shift);
