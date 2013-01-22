@@ -10,11 +10,11 @@ __PACKAGE__->config( namespace => '');
 
 sub default :Private {
     my ($self, $c) = @_;
-    my $pages = $c->model('CMS::Page');
     my $url   = '/' . $c->req->path;
     my $host  = $c->req->uri->host;
     my $site;
-
+    my $pages = $site->pages;
+    
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             my $prot = $c->req->uri->secure ? 'https://' : 'http://';
