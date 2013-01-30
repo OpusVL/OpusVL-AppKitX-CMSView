@@ -13,8 +13,7 @@ sub default :Private {
     my $url   = '/' . $c->req->path;
     my $host  = $c->req->uri->host;
     my $site;
-    my $pages = $site->pages;
-    
+
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             my $prot = $c->req->uri->secure ? 'https://' : 'http://';
@@ -47,6 +46,7 @@ sub default :Private {
         $c->detach;
     }
     
+    my $pages = $site->pages;
     # Does the URL match a real page?
     my $page = $pages->search({ site => $site->id })->published->find({url => $url});
     
