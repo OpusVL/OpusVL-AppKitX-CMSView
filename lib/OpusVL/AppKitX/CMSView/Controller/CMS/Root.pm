@@ -10,7 +10,6 @@ __PACKAGE__->config( namespace => '');
 
 sub default :Private {
     my ($self, $c) = @_;
-    my $pages = $c->model('CMS::Page');
     my $url   = '/' . $c->req->path;
     my $host  = $c->req->uri->host;
     my $site;
@@ -47,6 +46,7 @@ sub default :Private {
         $c->detach;
     }
     
+    my $pages = $site->pages;
     # Does the URL match a real page?
     my $page = $pages->search({ site => $site->id })->published->find({url => $url});
     
