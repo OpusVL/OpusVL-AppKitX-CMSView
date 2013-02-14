@@ -111,6 +111,17 @@ sub default :Private {
                             }
                         }
                     }
+
+                    elsif ($id eq 'icon') {
+                        if (my $icon = $site->assets->available($site->id)->find({ description => 'Icon' })) {
+                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                        }
+                        else {
+                            if ($icon = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Icon' })) {
+                               return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                            } 
+                        }
+                    }
                 }
             },
             attachment => sub {
