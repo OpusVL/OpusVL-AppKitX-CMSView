@@ -165,6 +165,15 @@ sub default :Private {
                 my $name = shift;
                 return $site->forms->find({ name => $name });
             },
+            site      => sub {
+                my $opt = shift;
+                given($opt) {
+                    when ('subdomain') {
+                        my ($subdomain, $host, $tld) = split /\./, $host;
+                        return $subdomain if $tld;
+                    }
+                }
+            }
         };
 
         # load any plugins
