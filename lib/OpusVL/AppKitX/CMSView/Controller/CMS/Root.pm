@@ -14,6 +14,12 @@ sub default :Private {
     my $host  = $c->req->uri->host;
     my $site;
 
+    if ($url =~ /^\/_asset\//) {
+	my @args = @{$c->req->arguments};
+	shift @args;
+        return $self->_asset($c, @args);
+    }
+
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             my $prot = $c->req->uri->secure ? 'https://' : 'http://';
@@ -82,7 +88,7 @@ sub default :Private {
                             }
                             else {
                                 $form->save($params)->email;
-                                $c->res->redirect($submit->redirect->url);
+        ;                       $c->res->redirect($submit->redirect->url);
                             }
                         }
                     }
@@ -94,38 +100,35 @@ sub default :Private {
         $c->stash->{cms} = {
             asset => sub {
                 my $id = shift;
-                if (looks_like_number $id) {
-                    if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({id => $id})) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
+                if ($id eq 'logo') {
+                    if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
+                    }
+                    else {
+                        if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
+                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
+                        }
+                    }
+                }
+
+                elsif ($id eq 'icon') {
+                    if (my $icon = $site->assets->available($site->id)->find({ description => 'Icon' })) {
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                    }
+                    else {
+                        if ($icon = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Icon' })) {
+                           return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                        } 
                     }
                 }
                 else {
-                    # not a number? then we may be looking for a logo!
-                    if ($id eq 'logo') {
-                        if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
-                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
-                        }
-                        else {
-                            if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
-                                return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
-                            }
-                        }
-                    }
-
-                    elsif ($id eq 'icon') {
-                        if (my $icon = $site->assets->available($site->id)->find({ description => 'Icon' })) {
-                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
-                        }
-                        else {
-                            if ($icon = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Icon' })) {
-                               return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
-                            } 
-                        }
+                    if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({slug => $id})) {
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
                     }
                 }
             },
             attachment => sub {
-                if (my $attachment = $c->model('CMS::Attachment')->find({id => shift})) {
+                if (my $attachment = $c->model('CMS::Attachment')->find({slug => shift})) {
                     return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->id, $attachment->filename);
                 }
             },
@@ -136,7 +139,7 @@ sub default :Private {
                         $c->stash->{me}->{$attr} = $attrs->{$attr};
                     }
                 }
-                if (my $element = $c->model('CMS::Element')->available($site->id)->find({id => $id})) {
+                if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
                     return $element->content;
                 }
             },
@@ -202,6 +205,10 @@ sub default :Private {
 
         if ($c->req->uri =~ /\.txt$/) {
             $c->res->content_type("text/plain");
+        }
+
+        if ($page->content_type ne 'text/html') {
+            $c->res->content_type( $page->content_type );
         }
 
         $c->forward($c->view('CMS::Page'));
@@ -276,13 +283,14 @@ sub throw_error {
 
 sub _asset :Local :Args(2) {
     my ($self, $c, $asset_id, $filename) = @_;
-    
-    if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
-        $c->response->content_type($asset->mime_type);
-        $c->response->body($asset->content);
-    } else {
-        $c->response->status(404);
-        $c->response->body("Not found");
+    if ($filename) {
+         if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
+             $c->response->content_type($asset->mime_type);
+             $c->response->body($asset->content);
+         } else {
+             $c->response->status(404);
+             $c->response->body("Not found");
+         }
     }
 }
 
