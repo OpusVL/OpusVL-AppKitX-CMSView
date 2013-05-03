@@ -65,7 +65,7 @@ sub default :Private {
             # check to see if they're on a fullsite (no m. domain)
             if ($host !~ /^m\./) {
                 # did they action want the fullsite?
-                unless ($c->session->{mwf}) {
+                unless ($c->session->{mobile_fullsite_pls}) {
                     # is there a mobile site?
                     if (my $dom = $c->model('CMS::MasterDomain')->find({ domain => "m.${host}" })) {
                         my $full_site = $dom->site;
