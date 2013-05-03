@@ -64,6 +64,14 @@ sub default :Private {
             # uncomment this for full cmsview mobil redirection compatibility
             # check to see if they're on a fullsite (no m. domain)
             if ($host !~ /^m\./) {
+                if ($c->req->query_params->{mwf} eq 't') {
+                    $c->session->{mobile_fullsite_pls} = 'yes, thanks';
+                }
+
+                if ($c->req->query_params->{mwf} eq 'f') {
+                    delete $c->session->{mobile_fullsite_pls};
+                }
+
                 # did they action want the fullsite?
                 unless ($c->session->{mobile_fullsite_pls}) {
                     # is there a mobile site?
@@ -90,22 +98,6 @@ sub default :Private {
                 # get the full host (without the m. bit)
                 my $fullhost = substr $host, 2;
                 
-                # requested full site?
-                if ($c->req->query_params->{mwf} eq 't') {
-                    $c->session->{mobile_fullsite_pls} = 1;
-                    # does a full site exist?                                                                                                                                               
-                    if (my $dom = $c->model('CMS::MasterDomain')->find({ domain => $fullhost })) {
-                        # try to get the page and go there                                                                                                                                  
-                        my $full_site = $dom->site;
-                        if (my $chk_page = $full_site->pages->search({ site => $full_site->id })->published->find({ url => $url })) {
-                            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
-                            my $port = $c->req->uri->port;
-                            $c->res->redirect("${prot}${fullhost}:${port}${url}");
-                            $c->detach;
-                        }
-                    }
-                }
-
                 # if the mobile page does not exist
                 # else, render as normal
                 if (not $page) {
