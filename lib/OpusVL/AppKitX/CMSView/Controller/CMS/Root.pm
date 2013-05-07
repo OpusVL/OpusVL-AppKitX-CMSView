@@ -108,7 +108,7 @@ sub default :Private {
                         if (my $chk_page = $full_site->pages->search({ site => $full_site->id })->published->find({ url => $url })) {
                            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
                            my $port = $c->req->uri->port;
-                           $c->res->redirect("${prot}${fullhost}:${port}${url}");
+                           $c->res->redirect("${prot}${fullhost}:${port}${url}?mwf=t");
                            $c->detach;
                         }
                         # or show mobile 404
