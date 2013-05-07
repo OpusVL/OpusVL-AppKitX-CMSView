@@ -66,6 +66,8 @@ sub default :Private {
             if ($host !~ /^m\./) {
                 if ($c->req->query_params->{mwf} eq 't') {
                     $c->session->{mobile_fullsite_pls} = 'yes, thanks';
+                    $c->res->redirect($c->req->uri->path);
+                    $c->detach;
                 }
 
                 if ($c->req->query_params->{mwf} eq 'f') {
