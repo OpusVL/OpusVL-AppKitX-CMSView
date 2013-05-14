@@ -11,6 +11,7 @@ requires 'Moose';
 requires 'namespace::autoclean';
 requires 'Catalyst::View::Thumbnail';
 requires 'OpusVL::AppKit';
+requires 'OpusVL::CMS';
 
 build_requires 'Catalyst::Runtime' => '5.80015';
 build_requires 'Test::WWW::Mechanize::Catalyst';
