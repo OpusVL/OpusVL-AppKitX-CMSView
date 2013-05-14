@@ -61,42 +61,44 @@ sub default :Private {
     # using a mobile device
     if ($c->config->{mobile_redirection_service}) {
         if ($self->_is_mobile_device($c)) {
-            # uncomment this for full cmsview mobil redirection compatibility
-            # check to see if they're on a fullsite (no m. domain)
-            if ($host !~ /^m\./) {
-                if ($c->req->query_params->{mwf} eq 't') {
-                    $c->session->{mobile_fullsite_pls} = 'yes, thanks';
-                    $c->res->redirect($c->req->uri->path);
-                    $c->detach;
-                }
+            if ($c->config->{mobile_redirection_service_extra}) {
+                # uncomment this for full cmsview mobil redirection compatibility
+                # check to see if they're on a fullsite (no m. domain)
+                if ($host !~ /^m\./) {
+                    if ($c->req->query_params->{mwf} eq 't') {
+                        $c->session->{mobile_fullsite_pls} = 'yes, thanks';
+                        $c->res->redirect($c->req->uri->path);
+                        $c->detach;
+                    }
 
-                if ($c->req->query_params->{mwf} eq 'f') {
-                    delete $c->session->{mobile_fullsite_pls};
-                }
+                    if ($c->req->query_params->{mwf} eq 'f') {
+                        delete $c->session->{mobile_fullsite_pls};
+                    }
 
-                # did they action want the fullsite?
-                unless ($c->session->{mobile_fullsite_pls}) {
-                    # is there a mobile site?
-                    if (my $dom = $c->model('CMS::MasterDomain')->find({ domain => "m.${host}" })) {
-                        my $full_site = $dom->site;
-                        # is there a mobile page for it?
-                        # if so, then redirect to that
-                        if (my $chk_page = $full_site->pages->search({ site => $full_site->id })->published->find({ url => $url })) {
-                            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
-                            my $port = $c->req->uri->port;
-                            $c->res->redirect("${prot}m.${host}:${port}${url}");
-                            $c->detach;
-                        }
-                        # no? then is there a full site page for it?
-                        # and if not, send to mobile 404 page
-                        if (not $page) {
-                            $c->res->redirect('/notfound');
-                            $c->detach;
-                        }
-                    } # end mobile site check
-                } # end session check
-            } # end fullsite check
-            elsif ($host =~ /^m\./) {
+                    # did they action want the fullsite?
+                    unless ($c->session->{mobile_fullsite_pls}) {
+                        # is there a mobile site?
+                        if (my $dom = $c->model('CMS::MasterDomain')->find({ domain => "m.${host}" })) {
+                            my $full_site = $dom->site;
+                            # is there a mobile page for it?
+                            # if so, then redirect to that
+                            if (my $chk_page = $full_site->pages->search({ site => $full_site->id })->published->find({ url => $url })) {
+                                my $prot = $c->req->uri->secure ? 'https://' : 'http://';
+                                my $port = $c->req->uri->port;
+                                $c->res->redirect("${prot}m.${host}:${port}${url}");
+                                $c->detach;
+                            }
+                            # no? then is there a full site page for it?
+                            # and if not, send to mobile 404 page
+                            if (not $page) {
+                                $c->res->redirect('/notfound');
+                                $c->detach;
+                            }
+                        } # end mobile site check
+                    } # end session check
+                } # end fullsite check
+            }
+            if ($host =~ /^m\./) {
                 # get the full host (without the m. bit)
                 my $fullhost = substr $host, 2;
                 
