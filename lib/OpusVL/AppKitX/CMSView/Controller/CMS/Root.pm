@@ -91,7 +91,7 @@ sub default :Private {
                             # no? then is there a full site page for it?
                             # and if not, send to mobile 404 page
                             if (not $page) {
-                                $c->res->redirect('/404');
+                                $c->res->redirect('/notfound');
                                 $c->detach;
                             }
                         } # end mobile site check
@@ -122,7 +122,7 @@ sub default :Private {
                         }
                         # or show mobile 404
                         else {
-                            $c->res->redirect('/404');
+                            $c->res->redirect('/notfound');
                             $c->detach;
                         }
                     }   
