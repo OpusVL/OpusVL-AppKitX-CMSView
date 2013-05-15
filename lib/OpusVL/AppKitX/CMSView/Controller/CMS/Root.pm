@@ -99,6 +99,11 @@ sub default :Private {
                 } # end fullsite check
             }
             if ($host =~ /^m\./) {
+                # strip off the www if we've found one
+                if (substr($host, 2, 4) eq 'www.') {
+                    substr($host, 2, 4) = '';
+                }
+
                 # get the full host (without the m. bit)
                 my $fullhost = substr $host, 2;
                 
