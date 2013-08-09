@@ -1,6 +1,7 @@
 package OpusVL::AppKitX::CMSView::Controller::CMS::Root;
 
 use 5.010;
+use Encode;
 use Moose;
 use Scalar::Util 'looks_like_number';
 use namespace::autoclean;
@@ -224,7 +225,7 @@ sub default :Private {
                     }
                 }
                 if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
-                    return $element->content;
+                    return encode('utf8', $element->content);
                 }
             },
             site_attr => sub {
