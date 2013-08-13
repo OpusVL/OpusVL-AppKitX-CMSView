@@ -209,8 +209,7 @@ sub default :Private {
                 else {
                     if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({slug => $id})) {
                         my $u = $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
-                        if ($c->req->uri->scheme eq 'https') { $u->scheme("https"); }
-                        return $u; 
+                        return $u->path; 
                     }
                 }
             },
