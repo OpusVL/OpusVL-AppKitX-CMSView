@@ -369,7 +369,7 @@ sub throw_error {
 sub _asset :Local :Args(2) {
     my ($self, $c, $asset_id, $filename) = @_;
     if ($filename) {
-         if (my $asset = $c->model('CMS::Asset')->published->find({slug => $filename})) {
+         if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
              $c->response->content_type($asset->mime_type);
              $c->response->body($asset->content);
          } else {
