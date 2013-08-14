@@ -135,7 +135,7 @@ sub default :Private {
     $c->log->debug("********** Running CMS lookup against: ${url} @ ${host}");
 
     # Does the URL match a page alias?
-    if (my $alias = $c->model('CMS::Alias')->find({url => '/'.$c->req->path})) {
+    if (my $alias = $page->aliases->find({url => '/'.$c->req->path})) {
         $c->log->debug("Found page alias, redirecting...");
         $c->res->redirect($c->uri_for($alias->page->url), 301);
         $c->detach;
