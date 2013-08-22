@@ -371,13 +371,23 @@ sub throw_error {
 sub _asset :Local :Args(2) {
     my ($self, $c, $asset_id, $filename) = @_;
     if ($filename) {
-         if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
-             $c->response->content_type($asset->mime_type);
-             $c->response->body($asset->content);
-         } else {
-             $c->response->status(404);
-             $c->response->body("Not found");
-         }
+        if ($asset_id eq 'use') {
+            if (my $asset = $c->model('CMS::Asset')->published->find({ slug => $filename })) {
+                $asset_id = $asset->id;
+            }
+            else {
+                $c->res->status(404);
+                $c->res->body("Not found");
+            }
+        }
+        
+        if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
+            $c->response->content_type($asset->mime_type);
+            $c->response->body($asset->content);
+        } else {
+            $c->response->status(404);
+            $c->response->body("Not found");
+        }
     }
 }
 
