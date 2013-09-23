@@ -33,6 +33,12 @@ sub default :Private {
         return $self->_asset($c, @args);
     }
 
+    if ($url =~ /^\/_attachment\//) {
+        my @args = @{$c->req->arguments};
+        shift @args;
+        return $self->_attachment($c, @args);
+    }
+
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             my $prot = $c->req->uri->secure ? 'https://' : 'http://';
