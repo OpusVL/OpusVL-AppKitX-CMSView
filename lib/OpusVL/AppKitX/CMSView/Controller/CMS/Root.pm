@@ -33,6 +33,12 @@ sub default :Private {
         return $self->_asset($c, @args);
     }
 
+    if ($url =~ /^\/_attachment\//) {
+        my @args = @{$c->req->arguments};
+        shift @args;
+        return $self->_attachment($c, @args);
+    }
+
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             my $prot = $c->req->uri->secure ? 'https://' : 'http://';
@@ -134,14 +140,6 @@ sub default :Private {
 
     $c->log->debug("********** Running CMS lookup against: ${url} @ ${host}");
 
-    # Does the URL match a page alias?
-    if ($page) {
-        if (my $alias = $page->aliases->find({url => '/'.$c->req->path})) {
-            $c->log->debug("Found page alias, redirecting...");
-            $c->res->redirect($c->uri_for($alias->page->url), 301);
-            $c->detach;
-        }
-    }
     
     # If not, do we have a page matching the current action?
     $page //= do {
@@ -153,6 +151,16 @@ sub default :Private {
         $c->response->status(404);
         $pages->published->find({url => '/404'});
     };
+
+    # Does the URL match a page alias?
+    if ($page) {
+        warn "************** CHECKING ALIAS " . $c->req->path;
+        if (my $alias = $c->model('CMS::Alias')->find({url => '/'.$c->req->path})) {
+            $c->log->debug("Found page alias, redirecting...");
+            $c->res->redirect($c->uri_for($alias->page->url), 301);
+            $c->detach;
+        }
+    }
     
     my $display_errors;
     if ($page) {
