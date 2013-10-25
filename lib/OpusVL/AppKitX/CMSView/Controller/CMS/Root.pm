@@ -189,11 +189,11 @@ sub default :Private {
                 my $id = shift;
                 if ($id eq 'logo') {
                     if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
                     }
                     else {
                         if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
-                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->id, $logo->filename);
+                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
                         }
                     }
                 }
@@ -210,13 +210,13 @@ sub default :Private {
                 }
                 else {
                     if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({slug => $id})) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $asset->id, $asset->filename);
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $id, $asset->filename);
                     }
                 }
             },
             attachment => sub {
-                if (my $attachment = $c->model('CMS::Attachment')->find({slug => shift})) {
-                    return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->id, $attachment->filename);
+                if (my $attachment = $c->model('CMS::Attachment')->search({slug => shift})->first) {
+                    return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->slug, $attachment->filename);
                 }
             },
             element => sub {
@@ -380,10 +380,16 @@ sub _asset :Local :Args(2) {
                 $c->res->body("Not found");
             }
         }
-        
-        if (my $asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
+
+        if (my $asset = $c->model('CMS::Asset')->published->search({ slug => $asset_id })->first) {
             $c->response->content_type($asset->mime_type);
             $c->response->body($asset->content);
+            $c->detach;
+        }
+        elsif ($asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
+            $c->response->content_type($asset->mime_type);
+            $c->response->body($asset->content);
+            $c->detach;
         } else {
             $c->response->status(404);
             $c->response->body("Not found");
@@ -393,8 +399,12 @@ sub _asset :Local :Args(2) {
 
 sub _attachment :Local :Args(2) {
     my ($self, $c, $attachment_id, $filename) = @_;
-    
-    if (my $attachment = $c->model('CMS::Attachment')->find({id => $attachment_id})) {
+   
+    if (my $attachment = $c->model('CMS::Attachment')->search({ slug => $attachment_id })->first) {
+        $c->res->content_type($attachment->mime_type);
+        $c->res->body($attachment->content);
+    } 
+    elsif ($attachment = $c->model('CMS::Attachment')->find({id => $attachment_id})) {
         $c->response->content_type($attachment->mime_type);
         $c->response->body($attachment->content);
     } else {
