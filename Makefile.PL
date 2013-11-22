@@ -10,7 +10,7 @@ all_from 'lib/OpusVL/AppKitX/CMSView.pm';
 requires 'Moose';
 requires 'namespace::autoclean';
 requires 'Catalyst::View::Thumbnail';
-requires 'OpusVL::AppKit';
+requires 'OpusVL::AppKit' => '1.92';
 requires 'OpusVL::CMS';
 
 build_requires 'Catalyst::Runtime' => '5.80015';

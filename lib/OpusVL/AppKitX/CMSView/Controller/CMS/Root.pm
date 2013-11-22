@@ -235,7 +235,7 @@ sub default :Private {
                     }
                 }
                 if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
-                    return encode('utf8', $element->content);
+                    return $element->content;
                 }
             },
             site_attr => sub {
