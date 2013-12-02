@@ -157,8 +157,10 @@ sub default :Private {
         warn "************** CHECKING ALIAS " . $c->req->path;
         if (my $alias = $c->model('CMS::Alias')->find({url => '/'.$c->req->path})) {
             $c->log->debug("Found page alias, redirecting...");
-            $c->res->redirect($c->uri_for($alias->page->url), 301);
-            $c->detach;
+            if ($alias->page->site->id == $page->site->id) {
+                $c->res->redirect($c->uri_for($alias->page->url), 301);
+                $c->detach;
+            }
         }
     }
     
