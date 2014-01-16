@@ -35,7 +35,7 @@ sub default :Private {
 
     if ($url =~ /^\/_attachment\//) {
         my @args = @{$c->req->arguments};
-        shift @args;
+        #shift @args;
         return $self->_attachment($c, @args);
     }
 
