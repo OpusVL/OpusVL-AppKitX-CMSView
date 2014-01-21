@@ -146,21 +146,22 @@ sub default :Private {
         $pages->published->find({url => '/'.$c->action});
     };
     
+    # Does the URL match a page alias?
+    unless ($page) {
+        warn "************** CHECKING ALIAS " . $c->req->path;
+        if (my $alias = $c->model('CMS::Alias')->find_redirect($site, $c->req->path)) {
+            $c->log->debug("Found page alias, redirecting...");
+            $c->res->redirect($c->uri_for($alias->page->url), 301);
+            $c->detach;
+        }
+    }
+
     # If not, do we have a 404 page?
     $page //= do {
         $c->response->status(404);
         $pages->published->find({url => '/404'});
     };
 
-    # Does the URL match a page alias?
-    if ($page) {
-        warn "************** CHECKING ALIAS " . $c->req->path;
-        if (my $alias = $c->model('CMS::Alias')->find({url => '/'.$c->req->path})) {
-            $c->log->debug("Found page alias, redirecting...");
-            $c->res->redirect($c->uri_for($alias->page->url), 301);
-            $c->detach;
-        }
-    }
     
     my $display_errors;
     if ($page) {
