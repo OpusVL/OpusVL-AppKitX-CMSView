@@ -29,6 +29,12 @@ sub default :Private {
 
     if ($url =~ /^\/_asset\//) {
 	    my @args = @{$c->req->arguments};
+        if (@args > 2) {
+            $c->res->status(404);
+            $c->res->body("Not found");
+            $c->detach;
+        }
+
 	    shift @args;
         return $self->_asset($c, @args);
     }
