@@ -403,9 +403,10 @@ sub throw_error {
 
 sub _asset :Local :Args(2) {
     my ($self, $c, $asset_id, $filename) = @_;
+    my $site = $self->_get_site($c);
     if ($filename) {
         if ($asset_id eq 'use') {
-            if (my $asset = $c->model('CMS::Asset')->published->find({ slug => $filename })) {
+            if (my $asset = $c->model('CMS::Asset')->available($site->id)->search({ slug => $filename })->first) {
                 $asset_id = $asset->id;
             }
             else {
@@ -414,12 +415,12 @@ sub _asset :Local :Args(2) {
             }
         }
 
-        if (my $asset = $c->model('CMS::Asset')->published->search({ slug => $asset_id })->first) {
+        if (my $asset = $c->model('CMS::Asset')->available($site->id)->search({ slug => $asset_id })->first) {
             $c->response->content_type($asset->mime_type);
             $c->response->body($asset->content);
             $c->detach;
         }
-        elsif ($asset = $c->model('CMS::Asset')->published->find({id => $asset_id})) {
+        elsif ($asset = $c->model('CMS::Asset')->available($site->id)->search({id => $asset_id})->first) {
             $c->response->content_type($asset->mime_type);
             $c->response->body($asset->content);
             $c->detach;
@@ -433,11 +434,12 @@ sub _asset :Local :Args(2) {
 sub _attachment :Local :Args(2) {
     my ($self, $c, $attachment_id, $filename) = @_;
    
-    if (my $attachment = $c->model('CMS::Attachment')->search({ slug => $attachment_id })->first) {
+    my $site = $self->_get_site($c);
+    if (my $attachment = $c->model('CMS::Attachment')->available($site->id)->search({ slug => $attachment_id })->first) {
         $c->res->content_type($attachment->mime_type);
         $c->res->body($attachment->content);
     } 
-    elsif ($attachment = $c->model('CMS::Attachment')->find({id => $attachment_id})) {
+    elsif ($attachment = $c->model('CMS::Attachment')->available($site->id)->search({id => $attachment_id})->first) {
         $c->response->content_type($attachment->mime_type);
         $c->response->body($attachment->content);
     } else {
