@@ -17,6 +17,156 @@ sub _is_mobile_device :Private {
     }
 }
 
+sub _get_site
+{
+    my ($self, $c, $args) = @_;
+    $args //= {};
+    my $host = $args->{host} // $c->req->uri->host;
+    my $url = $args->{url} // '/' . $c->req->path;
+
+    my $site;
+    if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
+        if (my $redirect_domain = $domain->redirect_domains->first) {
+            return unless $args->{redirect_if_necessary};
+            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
+            my $port = $c->req->uri->port;
+            $host    = $redirect_domain->domain;
+            $c->res->redirect("${prot}${host}:${port}${url}", 301);
+            $c->detach;
+        }
+
+        $site = $domain->site;
+    }
+    elsif ($domain = $c->model('CMS::AlternateDomain')->find({ domain => $host })) {
+        $site = $domain->master_domain->site;
+    }
+    elsif ($domain = $c->model('CMS::RedirectDomain')->find({ domain => $host })) {
+        # no problem, we were probably redirected here
+        $site = $domain->master_domain->site;
+    }
+    return $site;
+}
+
+sub render_page
+{
+    my ($self, $c, $page, $host, $display_errors) = @_;
+    my $site = $page->site;
+    $c->stash->{me}  = $page;
+    $c->stash->{cms} = {
+        asset => sub {
+            my $id = shift;
+            if ($id eq 'logo') {
+                if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
+                    return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
+                }
+                else {
+                    if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
+                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
+                    }
+                }
+            }
+
+            elsif ($id eq 'icon') {
+                if (my $icon = $site->assets->available($site->id)->find({ description => 'Icon' })) {
+                    return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                }
+                else {
+                    if ($icon = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Icon' })) {
+                       return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
+                    } 
+                }
+            }
+            else {
+                if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({slug => $id})) {
+                    return $c->uri_for($c->controller('Root')->action_for('_asset'), $id, $asset->filename);
+                }
+            }
+        },
+        attachment => sub {
+            if (my $attachment = $c->model('CMS::Attachment')->search({slug => shift})->first) {
+                return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->slug, $attachment->filename);
+            }
+        },
+        element => sub {
+            my ($id, $attrs) = @_;
+            if ($attrs) {
+                foreach my $attr (%$attrs) {
+                    $c->stash->{me}->{$attr} = $attrs->{$attr};
+                }
+            }
+            if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
+                return $element->content;
+            }
+        },
+        site_attr => sub {
+            my $code = shift;
+            if (my $attr = $site->site_attributes->find({ code => $code })) {
+                return $attr->value;
+            }
+        },
+        page => sub {
+            return $site->pages->published->find({id => shift});
+        },
+        pages => sub {
+            return $site->pages->published->attribute_search($site->id, @_);
+        },
+        param => sub {
+            return $c->req->param(shift);
+        },
+        toplevel => sub {
+            return $site->pages->published->toplevel;
+        },
+        thumbnail => sub {
+            return $c->uri_for($c->controller('Root')->action_for('_thumbnail'), @_);
+        },
+        form      => sub {
+            my $name = shift;
+            return $site->forms->find({ name => $name });
+        },
+        site      => sub {
+            my $opt = shift;
+            given($opt) {
+                when ('subdomain') {
+                    my ($subdomain, $host, $tld) = split /\./, $host;
+                    return $subdomain if $tld;
+                }
+            }
+        }
+    };
+
+    # load any plugins
+    my @plugins = $c->model('CMS::Plugin')->search({ status => 'active' })->all;
+    if (scalar @plugins > 0) {
+      {
+        no strict 'refs';
+        foreach my $plugin (@plugins) {
+          my $code = $plugin->code;
+          $code !~ s/[^[:ascii:]]//g;
+          $c->stash->{cms}->{plugin}->{ $plugin->action } = sub { eval($code) };
+        }
+      }
+    }
+
+    if (my $template = $page->template->content) {
+        if ($display_errors) {
+            $template = '[% BLOCK content %]' . $display_errors . $page->content . '[% END %]' . $template;
+        }
+        else {
+            $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
+        }
+        $c->stash->{template}   = \$template;
+        $c->stash->{no_wrapper} = 1;
+    }
+
+    if ($c->req->uri =~ /\.txt$/) {
+        $c->res->content_type("text/plain");
+    }
+
+    if ($page->content_type ne 'text/html') {
+        $c->res->content_type( $page->content_type );
+    }
+
+}
 
 sub default :Private {
     my ($self, $c) = @_;
@@ -25,7 +175,6 @@ sub default :Private {
     my $domain;
     my $url   = '/' . $c->req->path;
     my $host  = $c->req->uri->host;
-    my $site;
 
     if ($url =~ /^\/_asset\//) {
 	    my @args = @{$c->req->arguments};
@@ -45,25 +194,9 @@ sub default :Private {
         return $self->_attachment($c, @args);
     }
 
-    if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
-        if (my $redirect_domain = $domain->redirect_domains->first) {
-            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
-            my $port = $c->req->uri->port;
-            $host    = $redirect_domain->domain;
-            $c->res->redirect("${prot}${host}:${port}${url}", 301);
-            $c->detach;
-        }
-
-        $site = $domain->site;
-    }
-    elsif ($domain = $c->model('CMS::AlternateDomain')->find({ domain => $host })) {
-        $site = $domain->master_domain->site;
-    }
-    elsif ($domain = $c->model('CMS::RedirectDomain')->find({ domain => $host })) {
-        # no problem, we were probably redirected here
-        $site = $domain->master_domain->site;
-    }
-    else {
+    my $site = $self->_get_site($c, { host => $host, redirect_if_necessary => 1, url => $url });
+    unless($site) 
+    {
         $self->throw_error($c, 'NO_HOST', { host => $host });
         $c->detach;
     }
@@ -197,122 +330,7 @@ sub default :Private {
                 }
             }
         }
-        $site = $page->site;
-        $c->stash->{me}  = $page;
-        $c->stash->{cms} = {
-            asset => sub {
-                my $id = shift;
-                if ($id eq 'logo') {
-                    if (my $logo = $site->assets->available($site->id)->find({ description => 'Logo' })) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
-                    }
-                    else {
-                        if ($logo = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Logo' })) {
-                            return $c->uri_for($c->controller('Root')->action_for('_asset'), $logo->slug, $logo->filename);
-                        }
-                    }
-                }
-
-                elsif ($id eq 'icon') {
-                    if (my $icon = $site->assets->available($site->id)->find({ description => 'Icon' })) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
-                    }
-                    else {
-                        if ($icon = $c->model('CMS::Asset')->available($site->id)->find({ global => 1, description => 'Icon' })) {
-                           return $c->uri_for($c->controller('Root')->action_for('_asset'), $icon->id, $icon->filename);
-                        } 
-                    }
-                }
-                else {
-                    if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({slug => $id})) {
-                        return $c->uri_for($c->controller('Root')->action_for('_asset'), $id, $asset->filename);
-                    }
-                }
-            },
-            attachment => sub {
-                if (my $attachment = $c->model('CMS::Attachment')->search({slug => shift})->first) {
-                    return $c->uri_for($c->controller('Root')->action_for('_attachment'), $attachment->slug, $attachment->filename);
-                }
-            },
-            element => sub {
-                my ($id, $attrs) = @_;
-                if ($attrs) {
-                    foreach my $attr (%$attrs) {
-                        $c->stash->{me}->{$attr} = $attrs->{$attr};
-                    }
-                }
-                if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
-                    return $element->content;
-                }
-            },
-            site_attr => sub {
-                my $code = shift;
-                if (my $attr = $site->site_attributes->find({ code => $code })) {
-                    return $attr->value;
-                }
-            },
-            page => sub {
-                return $site->pages->published->find({id => shift});
-            },
-            pages => sub {
-                return $site->pages->published->attribute_search($site->id, @_);
-            },
-            param => sub {
-                return $c->req->param(shift);
-            },
-            toplevel => sub {
-                return $site->pages->published->toplevel;
-            },
-            thumbnail => sub {
-                return $c->uri_for($c->controller('Root')->action_for('_thumbnail'), @_);
-            },
-            form      => sub {
-                my $name = shift;
-                return $site->forms->find({ name => $name });
-            },
-            site      => sub {
-                my $opt = shift;
-                given($opt) {
-                    when ('subdomain') {
-                        my ($subdomain, $host, $tld) = split /\./, $host;
-                        return $subdomain if $tld;
-                    }
-                }
-            }
-        };
-
-        # load any plugins
-        my @plugins = $c->model('CMS::Plugin')->search({ status => 'active' })->all;
-        if (scalar @plugins > 0) {
-          {
-            no strict 'refs';
-            foreach my $plugin (@plugins) {
-              my $code = $plugin->code;
-              $code !~ s/[^[:ascii:]]//g;
-              $c->stash->{cms}->{plugin}->{ $plugin->action } = sub { eval($code) };
-            }
-          }
-        }
-
-        if (my $template = $page->template->content) {
-            if ($display_errors) {
-                $template = '[% BLOCK content %]' . $display_errors . $page->content . '[% END %]' . $template;
-            }
-            else {
-                $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
-            }
-            $c->stash->{template}   = \$template;
-            $c->stash->{no_wrapper} = 1;
-        }
-
-        if ($c->req->uri =~ /\.txt$/) {
-            $c->res->content_type("text/plain");
-        }
-
-        if ($page->content_type ne 'text/html') {
-            $c->res->content_type( $page->content_type );
-        }
-
+        $self->render_page($c, $page, $host, $display_errors);
         $c->forward($c->view('CMS::Page'));
     } else {
         OpusVL::AppKit::Controller::Root::default($self,$c);
