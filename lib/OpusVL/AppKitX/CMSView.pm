@@ -74,7 +74,7 @@ sub finalize_error {
 
 =head1 NAME
 
-OpusVL::AppKitX::CMS - 
+OpusVL::AppKitX::CMSView - CMS front end
 
 =head1 DESCRIPTION
 
