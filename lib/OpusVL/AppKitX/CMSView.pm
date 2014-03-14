@@ -57,7 +57,7 @@ sub finalize_error {
     my $host = $c->req->uri->host;
     my $root = $c->controller('Root');
     my $site = $root->_get_site($c, { host => $host });
-    $c->stash->{template} = '500.tt';
+    $c->stash->{template} = $c->config->{custom_error_template} || '500.tt';
     if($site)
     {
         my $pages = $site->pages;
