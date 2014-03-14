@@ -22,7 +22,7 @@ subtest 'Crash test' => sub
 {
     $mech->get('http://localhost/crash');
     is $mech->status, 500, 'Should return 500 response';
-    $mech->content_like(qr/Pete tong/i, 'Should contain generic error page'); 
+    $mech->content_like(qr/Please contact the site owner for assistance/i, 'Should contain generic error page'); 
     $mech->content_unlike(qr/Boom/, 'Should not contain actual crash details'); 
 
     done_testing;
