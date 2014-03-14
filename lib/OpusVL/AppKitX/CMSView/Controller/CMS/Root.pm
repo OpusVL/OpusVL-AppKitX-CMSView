@@ -287,7 +287,7 @@ sub default :Private {
     
     # Does the URL match a page alias?
     unless ($page) {
-        warn "************** CHECKING ALIAS " . $c->req->path;
+        $c->log->debug("************** CHECKING ALIAS " . $c->req->path);
         if (my $alias = $c->model('CMS::Alias')->find_redirect($site, $c->req->path)) {
             $c->log->debug("Found page alias, redirecting...");
             $c->res->redirect($c->uri_for($alias->page->url), 301);
