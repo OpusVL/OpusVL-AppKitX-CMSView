@@ -25,17 +25,11 @@ override _build_config => sub {
     # point the AppKitAuth Model to the correct DB file....
     $config->{'Model::AppKitAuthDB'} = 
     {
-        schema_class => 'OpusVL::AppKit::Schema::AppKitAuthDB',
         connect_info => [
           'dbi:SQLite:' . TestApp->path_to('root','test.db'),
         ],
     };
-    $config->{'Model::CMS'} = 
-    {
-        connect_info => [
-          'dbi:SQLite:' . TestApp->path_to('root','test.db'),
-        ],
-    };
+    $config->{'Model::CMS'} = $config->{'Model::AppKitAuthDB'};
 
     # .. add static dir into the config for Static::Simple..
     my $static_dirs = $config->{static}->{include_path};
