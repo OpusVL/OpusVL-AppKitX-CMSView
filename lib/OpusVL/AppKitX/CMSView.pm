@@ -4,6 +4,7 @@ use CatalystX::InjectComponent;
 use File::ShareDir qw/module_dir/;
 use namespace::autoclean;
 use HTML::Entities;
+use Try::Tiny;
 
 with 'OpusVL::AppKit::RolesFor::Plugin';
 
@@ -54,19 +55,22 @@ sub finalize_error {
     # $c->log->error($error);
 
 	$c->response->status(500);
-    my $host = $c->req->uri->host;
-    my $root = $c->controller('Root');
-    my $site = $root->_get_site($c, { host => $host });
     $c->stash->{template} = $c->config->{custom_error_template} || '500.tt';
-    if($site)
+    try
     {
-        my $pages = $site->pages;
-        my $page = $pages->published->find({url => '/500'});
-        if($page)
+        my $host = $c->req->uri->host;
+        my $root = $c->controller('Root');
+        my $site = $root->_get_site($c, { host => $host });
+        if($site)
         {
-            $root->render_page($c, $page, $host);
+            my $pages = $site->pages;
+            my $page = $pages->published->find({url => '/500'});
+            if($page)
+            {
+                $root->render_page($c, $page, $host);
+            }
         }
-    }
+    };
     $c->view('CMS::Page')->process($c);
 }
 
