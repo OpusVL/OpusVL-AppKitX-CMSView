@@ -438,10 +438,12 @@ sub _attachment :Local :Args(2) {
     if (my $attachment = $c->model('CMS::Attachment')->available($site->id)->search({ slug => $attachment_id })->first) {
         $c->res->content_type($attachment->mime_type);
         $c->res->body($attachment->content);
+        $c->detach;
     } 
     elsif ($attachment = $c->model('CMS::Attachment')->available($site->id)->search({id => $attachment_id})->first) {
         $c->response->content_type($attachment->mime_type);
         $c->response->body($attachment->content);
+        $c->detach;
     } else {
         $c->response->status(404);
         $c->response->body("Not found");
