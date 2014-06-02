@@ -141,7 +141,7 @@ sub render_page
         no strict 'refs';
         foreach my $plugin (@plugins) {
           my $code = $plugin->code;
-          $code !~ s/[^[:ascii:]]//g;
+          $code =~ s/[^[:ascii:]]//g;
           $c->stash->{cms}->{plugin}->{ $plugin->action } = sub { eval($code) };
         }
       }
