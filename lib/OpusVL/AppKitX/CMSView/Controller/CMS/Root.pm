@@ -53,6 +53,29 @@ sub render_page
     my $site = $page->site;
     $c->stash->{me}  = $page;
     $c->stash->{cms} = {
+        img   => sub {
+            my ($type, $slug, $align) = @_;
+            if ($type and $slug) {
+                $align = $align ? $align : 'center';
+                my $img;
+                for($type) {
+                    if (/asset/) {
+                        if (my $asset = $c->model('CMS::Asset')->available($site->id)->find({ slug => $slug })) {
+                            $img = $c->uri_for($c->controller('Root')->action_for('_asset'), $slug, $asset->filename);
+                        }
+                    } elsif (/attachment/) {
+                        if (my $att = $c->model('CMS::Attachment')->search({ slug => $slug })->first) {
+                            $img = $c->uri_for($c->controller('Root')->action_for('_attachment'), $att->slug, $att->filename);
+                        }
+                    }
+                }
+                
+                if ($img) {
+                    return qq{<div style="text-align:$align"><img src="$img"></div>};
+                }
+            }
+        },
+
         asset => sub {
             my $id = shift;
             if ($id eq 'logo') {
