@@ -44,6 +44,7 @@ after 'setup_components' => sub {
     unless ($view->include_path ~~ $template_path) {
         push @{$view->include_path}, $template_path;
     }
+    $class->config->{clickjack_same_origin} = 1;
 };
 
 sub finalize_error {
