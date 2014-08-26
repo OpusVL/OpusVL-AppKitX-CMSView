@@ -54,7 +54,7 @@ sub render_page
     $c->stash->{me}  = $page;
     $c->stash->{cms} = {
         img   => sub {
-            my ($type, $slug, $align) = @_;
+            my ($type, $slug, $align, $alt) = @_;
             if ($type and $slug) {
                 $align = $align ? $align : 'center';
                 my $img;
@@ -71,7 +71,8 @@ sub render_page
                 }
                 
                 if ($img) {
-                    return qq{<div style="text-align:$align"><img src="$img"></div>};
+                    $alt //= "";
+                    return qq{<div style="text-align:$align"><img src="$img" alt="${alt}"></div>};
                 }
             }
         },
