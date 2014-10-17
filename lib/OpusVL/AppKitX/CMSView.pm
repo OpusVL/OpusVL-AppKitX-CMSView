@@ -8,7 +8,7 @@ use Try::Tiny;
 
 with 'OpusVL::AppKit::RolesFor::Plugin';
 
-our $VERSION = '0.71';
+our $VERSION = '0.72';
 
 after 'setup_components' => sub {
     my $class = shift;
