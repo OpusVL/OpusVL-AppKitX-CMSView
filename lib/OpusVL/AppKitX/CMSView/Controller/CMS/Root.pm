@@ -145,6 +145,10 @@ sub render_page
         },
         form      => sub {
             my $name = shift;
+            if (looks_like_number($name)) {
+                return $c->model('CMS::Form')->find($name);
+            }
+
             return $site->forms->find({ name => $name });
         },
         site      => sub {
