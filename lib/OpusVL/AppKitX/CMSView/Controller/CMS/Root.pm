@@ -468,7 +468,7 @@ sub _attachment :Local :Args(2) {
         $c->res->body($attachment->content);
         $c->detach;
     } 
-    elsif ($attachment = $c->model('CMS::Attachment')->available($site->id)->search({id => $attachment_id})->first) {
+    elsif ($attachment_id =~ /^\d+$/ && ($attachment = $c->model('CMS::Attachment')->available($site->id)->search({id => $attachment_id})->first)) {
         $c->response->content_type($attachment->mime_type);
         $c->response->body($attachment->content);
         $c->detach;
