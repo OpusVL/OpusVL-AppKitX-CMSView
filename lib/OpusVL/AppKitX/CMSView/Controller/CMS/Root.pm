@@ -178,7 +178,7 @@ sub render_page
     if (my $template = $page->template->content) {
         if ($display_errors) {
             if ($page->markup_type eq 'Markdown') {
-                $template = '[% BLOCK content %][% USE Markdown -%][% FILTER markdown %]' . $display_errors . $page->content . '[%- END %][% END %]' . $template;
+                $template = '[% BLOCK content %][% USE MultiMarkdown -%][% FILTER multimarkdown %]' . $display_errors . $page->content . '[%- END %][% END %]' . $template;
             }
             else {
                 $template = '[% BLOCK content %]' . $display_errors . $page->content . '[% END %]' . $template;
@@ -186,7 +186,7 @@ sub render_page
         }
         else {
             if ($page->markup_type eq 'Markdown') {
-                $template = '[% BLOCK content %][% USE Markdown -%][% FILTER markdown %]' . $page->content . '[%- END %][% END %]' . $template;
+                $template = '[% BLOCK content %][% USE MultiMarkdown -%][% FILTER multimarkdown %]' . $page->content . '[%- END %][% END %]' . $template;
             }
             else {
                 $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
