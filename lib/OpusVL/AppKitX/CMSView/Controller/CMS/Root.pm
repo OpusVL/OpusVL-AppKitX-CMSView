@@ -177,10 +177,10 @@ sub render_page
 
     if (my $template = $page->template->content) {
         if ($display_errors) {
-            $template = '[% BLOCK content %]' . $display_errors . $page->content . '[% END %]' . $template;
+            $template = '[% BLOCK content %][% USE Markdown -%][% FILTER markdown %]' . $display_errors . $page->content . '[%- END %][% END %]' . $template;
         }
         else {
-            $template = '[% BLOCK content %]' . $page->content . '[% END %]' . $template;
+            $template = '[% BLOCK content %][% USE Markdown -%][% FILTER markdown %]' . $page->content . '[%- END %][% END %]' . $template;
         }
         $c->stash->{template}   = \$template;
         $c->stash->{no_wrapper} = 1;
