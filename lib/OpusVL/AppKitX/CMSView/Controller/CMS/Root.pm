@@ -324,10 +324,10 @@ sub default :Private {
     }
 
     # If not, do we have a 404 page?
-    $page //= do {
+    if (not $page or $c->action eq 'not_found') {
         $c->response->status(404);
-        $pages->published->find({url => '/404'});
-    };
+        $page = $pages->published->find({url => '/404'});
+    }
 
     
     my $display_errors;
