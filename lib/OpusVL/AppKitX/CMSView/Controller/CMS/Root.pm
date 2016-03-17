@@ -342,6 +342,11 @@ sub default :Private {
     
     my $display_errors;
     if ($page) {
+        # call preprocess
+        if ($self->can('preprocess')) {
+            $self->preprocess($c, $page);
+        }
+
         # form been submitted?
         if ($c->req->body_params) {
             my $params = $c->req->body_params;
