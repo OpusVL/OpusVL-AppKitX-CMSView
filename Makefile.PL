@@ -6,6 +6,7 @@ use Module::Install::AuthorTests;
 
 name 'OpusVL-AppKitX-CMSView';
 all_from 'lib/OpusVL/AppKitX/CMSView.pm';
+license 'perl';
 
 requires 'Moose';
 requires 'namespace::autoclean';
