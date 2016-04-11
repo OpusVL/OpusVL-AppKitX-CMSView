@@ -119,7 +119,7 @@ sub render_page
                 }
             }
             if (my $element = $c->model('CMS::Element')->available($site->id)->find({slug => $id})) {
-                return $element->content;
+                return "\n<!-- " . $element->name . " -->\n" . $element->content . "\n<!-- /" . $element->name . " -->\n";
             }
         },
         site_attr => sub {
@@ -133,6 +133,9 @@ sub render_page
         },
         pages => sub {
             return $site->pages->published->attribute_search($site->id, @_);
+        },
+        attachments => sub {
+            return $site->attachments->attribute_search($site->id, @_);
         },
         param => sub {
             return $c->req->param(shift);
