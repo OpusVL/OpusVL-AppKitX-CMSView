@@ -13,5 +13,5 @@ OpusVL-AppKitX-CMSView-*
 .DS_Store
 testapp_local.conf
 
-MYMETA.yml
+MYMETA.*
 MANIFEST.bak
