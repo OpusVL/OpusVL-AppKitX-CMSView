@@ -28,10 +28,9 @@ sub _get_site
     if (my $domain = $c->model('CMS::MasterDomain')->find({ domain => $host })) {
         if (my $redirect_domain = $domain->redirect_domains->first) {
             return unless $args->{redirect_if_necessary};
-            my $prot = $c->req->uri->secure ? 'https://' : 'http://';
-            my $port = $c->req->uri->port;
-            $host    = $redirect_domain->domain;
-            $c->res->redirect("${prot}${host}:${port}${url}", 301);
+            my $uri = $c->req->uri->clone;
+            $uri->host($redirect_domain->domain);
+            $c->res->redirect("$uri", 301);
             $c->detach;
         }
 
