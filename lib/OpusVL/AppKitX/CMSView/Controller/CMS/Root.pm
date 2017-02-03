@@ -335,6 +335,15 @@ sub default :Private {
         }
     }
 
+    # this allows assets to be hosted outside the /_asset urls.
+    my $asset = $site->assets->find({ arbitrary_url => $url });
+    if($asset)
+    {
+        $c->response->content_type($asset->mime_type);
+        $c->response->body($asset->content);
+        $c->detach;
+    }
+
     # If not, do we have a 404 page?
     if (not $page or $c->action eq 'not_found') {
         $c->response->status(404);
